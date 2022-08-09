@@ -22,6 +22,7 @@ from entity_linker_evaluation import measure_performance
 from kb_creator import read_kb
 
 from spacy.util import minibatch, compounding
+import subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,13 @@ def main(
     if not output_dir.exists():
         output_dir.mkdir()
 
+    # Use GPU if available
+    try:
+        subprocess.check_output('nvidia-smi')
+        print('Nvidia GPU detected!')
+        spacy.require_gpu()
+    except:
+        print('No Nvidia GPU in system!')
     # STEP 1 : load the NLP object
     logger.info("STEP 1a: Loading model from {}".format(nlp_dir))
     nlp = spacy.load(nlp_dir)
