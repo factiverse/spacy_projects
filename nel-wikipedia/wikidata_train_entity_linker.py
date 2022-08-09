@@ -169,7 +169,11 @@ def main(
                             kb=kb,
                             labels_discard=labels_discard,
                         )
-                        docs, golds = zip(*train_batch)
+                        try:
+                            docs, golds = zip(*train_batch)
+                        except Exception as e:
+                            logger.error("Error updating batch, article seems to have no entities:" + str(e))
+                            continue
                     try:
                         with nlp.disable_pipes(*other_pipes):
                             nlp.update(
