@@ -10,6 +10,7 @@ import argparse
 from pathlib import Path
 
 import spacy
+from tqdm import tqdm
 
 from wiki_io import (
     ENTITY_ALIAS_PATH,
@@ -72,7 +73,7 @@ def _define_entities(nlp, kb, entity_def_path, entity_descr_path, min_entity_fre
     logger.info("Kept {} entities from the set of {}".format(len(description_list), len(title_to_id.keys())))
     
     logger.info("Getting entity embeddings")
-    embeddings = [nlp(desc)._.trf_data.tensors[-1][0] for desc in description_list]
+    embeddings = [nlp(desc)._.trf_data.tensors[-1][0] for desc in tqdm(description_list)]
 
     logger.info("Adding {} entities".format(len(entity_list)))
     kb.set_entities(
@@ -91,6 +92,22 @@ def _define_aliases(kb, entity_alias_path, entity_list, filtered_title_to_id, ma
         min_occ=min_occ,
         prior_prob_path=prior_prob_path,
     )
+
+def get_filtered_entities(title_to_id, id_to_descr, entity_frequencies,
+                          min_entity_freq: int = 10):
+    filtered_title_to_id = dict()
+    entity_list = []
+    description_list = []
+    frequency_list = []
+    for title, entity in title_to_id.items():
+        freq = entity_frequencies.get(title, 0)
+        desc = id_to_descr.get(entity, None)
+        if desc and freq > min_entity_freq:
+            entity_list.append(entity)
+            description_list.append(desc)
+            frequency_list.append(freq)
+            filtered_title_to_id[title] = entity
+    return filtered_title_to_id, entity_list, description_list, frequency_list
 
 def _add_aliases(kb, entity_list, title_to_id, max_entities_per_alias, min_occ, prior_prob_path):
     wp_titles = title_to_id.keys()
@@ -261,10 +278,15 @@ def main(
     logger.info("Done!")
 
 # def parse_args():
-#     parser = argparse.ArgumentParser("logically scraping instance.")
-#     parser.add_argument("--output_dir", type=str,
-#         required=True,
-#         help="Output directory",)
+    parser = argparse.ArgumentParser("logically scraping instance.")
+    parser.add_argument("--output_dir", type=str,
+        required=True,
+        help="Output directory",
+        default="/local/home/vsetty/spacy3_wikidata_kb")
+    parser.add_argument("--kb_dir", type=str,
+        required=True,
+        help="Director containing KB",
+        default="/local/home/vsetty/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922")
     
     
 #     # @plac.annotations(
