@@ -277,16 +277,17 @@ def main(
 
     logger.info("Done!")
 
-# def parse_args():
+def parse_args():
     parser = argparse.ArgumentParser("logically scraping instance.")
     parser.add_argument("--output_dir", type=str,
         required=True,
         help="Output directory",
-        default="/local/home/vsetty/spacy3_wikidata_kb")
+        default="/local/home/vsetty/spacy_nel/data/spacy3_wikidata_kb")
     parser.add_argument("--kb_dir", type=str,
         required=True,
         help="Director containing KB",
-        default="/local/home/vsetty/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922")
+        default="/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922")
+    return parser.parse_args()
     
     
 #     # @plac.annotations(
@@ -309,9 +310,10 @@ def main(
 # )
 
 if __name__ == "__main__":
-    wikidata_wikipedia_preprocessed_dir="/local/home/vsetty/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922"
+    args = parse_args()
+    wikidata_wikipedia_preprocessed_dir=args.kb_dir
     main(
-        output_dir=Path("./spacy3_en_kb"),
+        output_dir=Path(args.output_dir),
         model="en_core_web_trf",
         max_per_alias=10,
         min_freq=20,
