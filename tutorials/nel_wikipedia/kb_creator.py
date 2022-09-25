@@ -1,8 +1,11 @@
 import logging
 
 from spacy.kb import KnowledgeBase
+from spacy.vocab import Vocab
 
 import wiki_io as io
+
+logging.basicConfig(filename="spacy3_kb.log")
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +15,9 @@ from pathlib import Path
 import spacy
 from tqdm import tqdm
 
+spacy.require_gpu()
+
+TESTING=False
 from wiki_io import (
     ENTITY_ALIAS_PATH,
     ENTITY_DEFS_PATH,
@@ -73,6 +79,10 @@ def _define_entities(nlp, kb, entity_def_path, entity_descr_path, min_entity_fre
     logger.info("Kept {} entities from the set of {}".format(len(description_list), len(title_to_id.keys())))
     
     logger.info("Getting entity embeddings")
+    if TESTING:
+        description_list = description_list[:1000]
+        entity_list=entity_list[:1000]
+        frequency_list=frequency_list[:1000]
     embeddings = [nlp(desc)._.trf_data.tensors[-1][0] for desc in tqdm(description_list)]
 
     logger.info("Adding {} entities".format(len(entity_list)))
@@ -128,7 +138,8 @@ def _add_aliases(kb, entity_list, title_to_id, max_entities_per_alias, min_occ, 
             new_alias = splits[0]
             count = int(splits[1])
             entity = splits[2]
-
+            if len(entities) >= 1000 and TESTING:
+                break
             if new_alias != previous_alias and previous_alias:
                 # done reading the previous alias --> output
                 if len(entities) > 0:
@@ -268,7 +279,7 @@ def main(
             prior_prob_path=prior_prob_path,
             entity_vector_length=entity_vector_length,
         )
-        kb.dump(kb_path)
+        kb.to_disk(kb_path)
         logger.info("kb entities: {}".format(kb.get_size_entities()))
         logger.info("kb aliases: {}".format(kb.get_size_aliases()))
         nlp.to_disk(output_dir / KB_MODEL_DIR)
@@ -287,6 +298,10 @@ def parse_args():
         required=True,
         help="Director containing KB",
         default="/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922")
+    parser.add_argument("--vector_len", type=int,
+        required=True,
+        help="Dimension of the vector",
+        default=768)
     return parser.parse_args()
     
     
@@ -309,6 +324,12 @@ def parse_args():
 #     lang=("Optional language for which to get Wikidata titles. Defaults to 'en'", "option", "la", str),
 # )
 
+def read_kb(kb_path, nlp_path):
+    vocab = Vocab().from_disk(nlp_path / "vocab")
+    kb = KnowledgeBase(vocab=vocab, entity_vector_length=768)
+    kb.from_disk(kb_path)
+    return kb
+
 if __name__ == "__main__":
     args = parse_args()
     wikidata_wikipedia_preprocessed_dir=args.kb_dir
@@ -316,12 +337,19 @@ if __name__ == "__main__":
         output_dir=Path(args.output_dir),
         model="en_core_web_trf",
         max_per_alias=10,
-        min_freq=20,
+        min_freq=10,
         min_pair=5,
-        entity_vector_length=64,
+        entity_vector_length=args.vector_len,
         loc_prior_prob=Path(wikidata_wikipedia_preprocessed_dir)/ PRIOR_PROB_PATH,
         loc_entity_defs=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_DEFS_PATH,
         loc_entity_alias=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_ALIAS_PATH,
         loc_entity_desc=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_DESCR_PATH,
         loc_freq_path=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_FREQ_PATH,
     )
+    kb = read_kb(Path(args.output_dir) / KB_FILE, Path(args.output_dir) / KB_MODEL_DIR)
+    print(len(kb))
+    print(kb.entity_vector_length)
+    print(kb.get_size_aliases())
+    if TESTING:
+        print(kb.get_alias_strings())
+    print(kb.get_alias_candidates("Belgian State"))
