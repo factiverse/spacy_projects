@@ -1,13 +1,22 @@
 import logging
+import sys
 
 from spacy.kb import KnowledgeBase
 from spacy.vocab import Vocab
 
 import wiki_io as io
 
-logging.basicConfig(filename="spacy3_kb.log")
-
+# logging.basicConfig(filename="spacy3_kb.log")
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+
 
 import argparse
 from pathlib import Path
@@ -57,15 +66,15 @@ def _define_entities(nlp, kb, entity_def_path, entity_descr_path, min_entity_fre
     logger.info("Reading desc from {} ".format(entity_descr_path))
     id_to_descr = io.read_id_to_descr(entity_descr_path)
 
-    # # check the length of the nlp vectors
-    # if "vectors" in nlp.meta and nlp.vocab.vectors.size:
-    #     input_dim = nlp.vocab.vectors_length
-    #     logger.info("Loaded pretrained vectors of size %s" % input_dim)
-    # else:
-    #     raise ValueError(
-    #         "The `nlp` object should have access to pretrained word vectors, "
-    #         " cf. https://spacy.io/usage/models#languages."
-    #     )
+    # check the length of the nlp vectors
+    if "vectors" in nlp.meta and nlp.vocab.vectors.size:
+        input_dim = nlp.vocab.vectors_length
+        logger.info("Loaded pretrained vectors of size %s" % input_dim)
+    else:
+        raise ValueError(
+            "The `nlp` object should have access to pretrained word vectors, "
+            " cf. https://spacy.io/usage/models#languages."
+        )
 
     logger.info("Filtering entities with fewer than {} mentions".format(min_entity_freq))
     entity_frequencies = io.read_entity_to_count(entity_freq_path)
@@ -83,7 +92,8 @@ def _define_entities(nlp, kb, entity_def_path, entity_descr_path, min_entity_fre
         description_list = description_list[:1000]
         entity_list=entity_list[:1000]
         frequency_list=frequency_list[:1000]
-    embeddings = [nlp(desc)._.trf_data.tensors[-1][0] for desc in tqdm(description_list)]
+    # embeddings = [nlp(desc)._.trf_data.tensors[-1][0] for desc in tqdm(description_list)]
+    embeddings = [nlp(desc).vector for desc in tqdm(description_list)]
 
     logger.info("Adding {} entities".format(len(entity_list)))
     kb.set_entities(
@@ -177,8 +187,8 @@ def _add_aliases(kb, entity_list, title_to_id, max_entities_per_alias, min_occ, 
 def main(
     output_dir,
     model,
-    max_per_alias=10,
-    min_freq=20,
+    max_per_alias=20,
+    min_freq=10,
     min_pair=5,
     entity_vector_length=64,
     loc_prior_prob=None,
@@ -294,6 +304,10 @@ def parse_args():
         required=True,
         help="Output directory",
         default="/local/home/vsetty/spacy_nel/data/spacy3_wikidata_kb")
+    parser.add_argument("--model", type=str,
+        required=True,
+        help="nb_core_news_lg for norwegian and en_core_web_lg for English",
+        default="nb_core_news_lg")
     parser.add_argument("--kb_dir", type=str,
         required=True,
         help="Director containing KB",
@@ -301,6 +315,10 @@ def parse_args():
     parser.add_argument("--vector_len", type=int,
         required=True,
         help="Dimension of the vector",
+        default=768)
+    parser.add_argument("--freq", type=int,
+        required=True,
+        help="Minimum number of frequency of entities to include",
         default=768)
     return parser.parse_args()
     
@@ -332,12 +350,13 @@ def read_kb(kb_path, nlp_path):
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args)
     wikidata_wikipedia_preprocessed_dir=args.kb_dir
     main(
         output_dir=Path(args.output_dir),
-        model="en_core_web_trf",
+        model=args.model,
         max_per_alias=10,
-        min_freq=10,
+        min_freq=args.freq,
         min_pair=5,
         entity_vector_length=args.vector_len,
         loc_prior_prob=Path(wikidata_wikipedia_preprocessed_dir)/ PRIOR_PROB_PATH,
@@ -353,3 +372,4 @@ if __name__ == "__main__":
     if TESTING:
         print(kb.get_alias_strings())
     print(kb.get_alias_candidates("Belgian State"))
+ 
