@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 import kb_creator
 
-# spacy.require_gpu()
+spacy.require_gpu()
 
 def is_valid_article(doc_text):
     # custom length cut-off
@@ -177,12 +177,12 @@ def create_entity_linker(nlp, train_examples: List[Any], dir: Path):
     entity_linker.initialize(get_examples=lambda: train_examples, kb_loader=load_kb(dir / "my_kb"))
     return entity_linker
 
-def train_entity_linker(nlp, train_examples: List[Any], kb_path: Path):
+def train_entity_linker(nlp, train_examples: List[Any], kb_path: Path, num_iter: int=500):
     entity_linker = nlp.add_pipe("entity_linker", config={"incl_prior": True}, last=True)
     entity_linker.initialize(get_examples=lambda: train_examples, kb_loader=load_kb(kb_path))
     with nlp.select_pipes(enable=["entity_linker"]):   # train only the entity_linker
         optimizer = nlp.resume_training()
-        for itn in range(5000):   # 500 iterations takes about a minute to train
+        for itn in range(num_iter):   # 500 iterations takes about a minute to train
             random.shuffle(train_examples)
             batches = minibatch(train_examples, size=compounding(16.0, 128.0, 4.001))  # increasing batch sizes
             losses = {}
@@ -213,7 +213,10 @@ def parse_args():
         required=True,
         help="Director containing KB",
         default="/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922")
-  
+    parser.add_argument("--iter", type=int,
+        required=True,
+        help="Number of iterations to run",
+        default=1)
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -232,10 +235,11 @@ if __name__ == "__main__":
     # dataset = load_gold_dataset(data_path=Path("/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_en_kb_train_output_230922/"), nlp=nlp, kb=kb)
     print(dataset[0])
     train_examples = get_train_examples(dataset, nlp)
-    train_entity_linker(nlp, train_examples=train_examples, kb_path=kb_path)
+    train_entity_linker(nlp, train_examples=train_examples, kb_path=kb_path, num_iter=args.iter)
     text = "Med USAs historie menes gjerne dette områdets nyere historie, det vil si fra og med vestlige sjøfarere oppdaget de amerikanske kontinentene og koloniserte dem, blant annet den delen som senere skulle bli USA."
     doc = nlp(text)
     for ent in doc.ents:
         print(ent.text, ent.label_, ent.kb_id_)
     nlp.to_disk(Path(args.output_dir) / "trained_nel")
+    
     

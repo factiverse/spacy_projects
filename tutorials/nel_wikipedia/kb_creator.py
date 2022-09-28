@@ -299,7 +299,7 @@ def main(
     logger.info("Done!")
 
 def parse_args():
-    parser = argparse.ArgumentParser("logically scraping instance.")
+    parser = argparse.ArgumentParser("Create Spacy KB")
     parser.add_argument("--output_dir", type=str,
         required=True,
         help="Output directory",
@@ -315,11 +315,11 @@ def parse_args():
     parser.add_argument("--vector_len", type=int,
         required=True,
         help="Dimension of the vector",
-        default=768)
+        default=300)
     parser.add_argument("--freq", type=int,
         required=True,
         help="Minimum number of frequency of entities to include",
-        default=768)
+        default=1)
     return parser.parse_args()
     
     
