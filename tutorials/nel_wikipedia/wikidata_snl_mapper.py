@@ -1,3 +1,4 @@
+import argparse
 import codecs
 import json
 from pathlib import Path
@@ -42,7 +43,16 @@ def get_snl_article_id(url: Text) -> int:
 
 
 if __name__ == "__main__":
-    data_path = "/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_no_kb_train_output_250922"
+    parser = argparse.ArgumentParser("Create Spacy KB")
+    parser.add_argument(
+        "--kb_dir",
+        type=str,
+        required=True,
+        help="Director containing KB",
+        default="/local/home/vsetty/spacy_nel/data/spacy_nel_wikidata_wikipedia_no_kb_train_output_250922",
+    )
+    args = parser.parse_args()
+    data_path = args.kb)d
     wd = Wikidata()
     with codecs.open(Path(data_path) / "snl_ids.tsv", "w", "utf-8") as outf:
         with open(Path(data_path) / "entity_defs.csv") as f:
