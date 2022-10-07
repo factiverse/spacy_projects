@@ -54,16 +54,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     data_path = args.kb_dir
     wd = Wikidata()
-    with codecs.open(Path(data_path) / "snl_ids.tsv", "w", "utf-8") as outf:
-        with open(Path(data_path) / "entity_defs.csv") as f:
+    with codecs.open(Path(data_path) / "snl_ids_article_ids.tsv", "w", "utf-8") as outf:
+        with open(Path(data_path) / "snl_ids.tsv") as f:
             next(f)
             for line in f:
-                [wikidata_label, wikidata_id] = line.split("|")
-                wikidata_id = wikidata_id.strip("\n")
+                [wikidata_url, snl_id] = line.split("\t")
+                wikidata_id = wikidata_url.split("/")[-1]
+                snl_url = f"https://snl.no/{snl_id}"
+                print(wikidata_id, snl_id)
                 if wikidata_id:
-                    snl_url = wd.get_snl_id(wikidata_id)
                     if snl_url:
                         snl_article_id = get_snl_article_id(snl_url)
-                        outf.write(
-                            f"{wikidata_id}\t{wikidata_label}\t{snl_url}\t{snl_article_id}\n"
-                        )
+                        if snl_article_id != -1:
+                            outf.write(f"{wikidata_id}\t{snl_url}\t{snl_article_id}\n")
