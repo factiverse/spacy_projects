@@ -55,7 +55,7 @@ if __name__ == "__main__":
     data_path = args.kb_dir
     wd = Wikidata()
     with codecs.open(Path(data_path) / "snl_ids_article_ids.tsv", "w", "utf-8") as outf:
-        with open(Path(data_path) / "snl_ids.tsv") as f:
+        with open(Path(data_path) / "wikidata_snl_ids.tsv") as f:
             next(f)
             for line in f:
                 [wikidata_url, snl_id] = line.split("\t")
