@@ -47,6 +47,8 @@ def read_el_docs_golds(
     dev_num_records=100,
     labels_discard=None,
     dev=False,
+    translate_snl_ids=False,
+    snl_id_dict={},
 ):
     """This method provides training/dev examples that correspond to the entity annotations found by the nlp object.
     For training, it will include both positive and negative examples by using the candidate generator from the kb.
@@ -58,11 +60,11 @@ def read_el_docs_golds(
     with entity_file_path.open("r", encoding="utf8") as _file:
         for i, line in enumerate(tqdm(_file)):
             # print(line)
-            if dev:
-                if i < train_num_records:
-                    continue
-                if dev_recs > dev_num_records:
-                    break
+            # if dev:
+            #     if i < train_num_records:
+            #         continue
+            #     if dev_recs > dev_num_records:
+            #         break
             if not dev and train_recs > train_num_records:
                 break
 
@@ -80,7 +82,13 @@ def read_el_docs_golds(
                 logger.error(f"Failed to parse {clean_text}")
                 continue
             gold = _get_gold_parse(
-                doc, entities, dev=dev, kb=kb, labels_discard=labels_discard
+                doc,
+                entities,
+                dev=dev,
+                kb=kb,
+                labels_discard=labels_discard,
+                translate_snl_ids=translate_snl_ids,
+                snl_id_dict=snl_id_dict,
             )
             if gold and len(gold["entities"]) > 0:
                 yield (str(doc), gold)
@@ -89,7 +97,9 @@ def read_el_docs_golds(
             dev_recs += 1
 
 
-def _get_gold_parse(doc, entities, dev, kb, labels_discard):
+def _get_gold_parse(
+    doc, entities, dev, kb, labels_discard, translate_snl_ids, snl_id_dict
+):
     all_links = {}
     all_annotations = []
     tagged_ent_positions = {
@@ -100,6 +110,12 @@ def _get_gold_parse(doc, entities, dev, kb, labels_discard):
 
     for entity in entities:
         entity_id = entity["entity"]
+        if translate_snl_ids:
+            if int(entity_id) in snl_id_dict:
+                entity_id_tuple = snl_id_dict.get(int(entity_id))
+                entity_id = entity_id_tuple[0]
+            else:
+                continue
         alias = entity["alias"]
         start = entity["start"]
         end = entity["end"]

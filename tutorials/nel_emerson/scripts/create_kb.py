@@ -1,14 +1,14 @@
-import typer
 import csv
 import os
 from pathlib import Path
 
 import spacy
+import typer
 from spacy.kb import KnowledgeBase
 
 
 def main(entities_loc: Path, vectors_model: str, kb_loc: Path, nlp_dir: Path):
-    """ Step 1: create the Knowledge Base in spaCy and write it to file """
+    """Step 1: create the Knowledge Base in spaCy and write it to file"""
 
     # First: create a simpel model from a model with an NER component
     # To ensure we get the correct entities for this demo, add a simple entity_ruler as well.
@@ -20,11 +20,26 @@ def main(entities_loc: Path, vectors_model: str, kb_loc: Path, nlp_dir: Path):
 
     name_dict, desc_dict = _load_entities(entities_loc)
 
-    kb = KnowledgeBase(vocab=nlp.vocab, entity_vector_length=300)
+    if "vectors" in nlp.meta and nlp.vocab.vectors.size:
+        input_dim = nlp.vocab.vectors_length
+    else:
+        # raise ValueError(
+        #     "The `nlp` object should have access to pretrained word vectors, "
+        #     " cf. https://spacy.io/usage/models#languages."
+        # )
+        input_dim = len(nlp("Some text")._.trf_data.tensors[-1][0])
+
+    kb = KnowledgeBase(vocab=nlp.vocab, entity_vector_length=input_dim)
 
     for qid, desc in desc_dict.items():
         desc_doc = nlp(desc)
-        desc_enc = desc_doc.vector
+        # if "vectors" in nlp.meta:
+        #     print("tok2vec")
+        #     desc_enc = desc_doc.vector
+        # else:
+        # print("Transformer vector", desc_doc._.trf_data)
+        desc_enc = desc_doc._.trf_data.tensors[-1][0]
+        # print(desc, desc_enc)
         # Set arbitrary value for frequency
         kb.add_entity(entity=qid, entity_vector=desc_enc, freq=342)
 
@@ -47,7 +62,7 @@ def main(entities_loc: Path, vectors_model: str, kb_loc: Path, nlp_dir: Path):
 
 
 def _load_entities(entities_loc: Path):
-    """ Helper function to read in the pre-defined entities we want to disambiguate to. """
+    """Helper function to read in the pre-defined entities we want to disambiguate to."""
     names = dict()
     descriptions = dict()
     with entities_loc.open("r", encoding="utf8") as csvfile:

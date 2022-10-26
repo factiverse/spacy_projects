@@ -300,31 +300,31 @@ def main(
         input_dim = len(nlp("Some text")._.trf_data.tensors[-1][0])
         logger.info("Creating transformer tensors of size %s" % input_dim)
     # # STEP 2: create prior probabilities from WP
-    if not prior_prob_path.exists():
-        # It takes about 2h to process 1000M lines of Wikipedia XML dump
-        logger.info("STEP 2: Writing prior probabilities to {}".format(prior_prob_path))
-        if limit_prior is not None:
-            logger.warning(
-                "Warning: reading only {} lines of Wikipedia dump".format(limit_prior)
-            )
-        wp.read_prior_probs(wp_xml, prior_prob_path, limit=limit_prior)
-    else:
-        logger.info(
-            "STEP 2: Reading prior probabilities from {}".format(prior_prob_path)
-        )
+    # if not prior_prob_path.exists():
+    #     # It takes about 2h to process 1000M lines of Wikipedia XML dump
+    #     logger.info("STEP 2: Writing prior probabilities to {}".format(prior_prob_path))
+    #     if limit_prior is not None:
+    #         logger.warning(
+    #             "Warning: reading only {} lines of Wikipedia dump".format(limit_prior)
+    #         )
+    #     wp.read_prior_probs(wp_xml, prior_prob_path, limit=limit_prior)
+    # else:
+    #     logger.info(
+    #         "STEP 2: Reading prior probabilities from {}".format(prior_prob_path)
+    #     )
 
-    # STEP 3: calculate entity frequencies
-    if not entity_freq_path.exists():
-        logger.info(
-            "STEP 3: Calculating and writing entity frequencies to {}".format(
-                entity_freq_path
-            )
-        )
-        io.write_entity_to_count(prior_prob_path, entity_freq_path)
-    else:
-        logger.info(
-            "STEP 3: Reading entity frequencies from {}".format(entity_freq_path)
-        )
+    # # STEP 3: calculate entity frequencies
+    # if not entity_freq_path.exists():
+    #     logger.info(
+    #         "STEP 3: Calculating and writing entity frequencies to {}".format(
+    #             entity_freq_path
+    #         )
+    #     )
+    #     io.write_entity_to_count(prior_prob_path, entity_freq_path)
+    # else:
+    #     logger.info(
+    #         "STEP 3: Reading entity frequencies from {}".format(entity_freq_path)
+    #     )
 
     # STEP 4: reading definitions and (possibly) descriptions from WikiData or from file
     # if (not entity_defs_path.exists()) or (not descr_from_wp and not entity_descr_path.exists()):
@@ -467,9 +467,9 @@ if __name__ == "__main__":
     main(
         output_dir=Path(args.output_dir),
         model=args.model,
-        max_per_alias=10,
+        max_per_alias=20,
         min_freq=args.freq,
-        min_pair=5,
+        min_pair=2,
         loc_prior_prob=Path(wikidata_wikipedia_preprocessed_dir) / PRIOR_PROB_PATH,
         loc_entity_defs=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_DEFS_PATH,
         loc_entity_alias=Path(wikidata_wikipedia_preprocessed_dir) / ENTITY_ALIAS_PATH,
