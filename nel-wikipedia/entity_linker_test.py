@@ -5,12 +5,13 @@ parser = argparse.ArgumentParser("Spacy entity linker example code")
 parser.add_argument(
     "--model_path",
     type=str,
-    required=True,
+    required=False,
     help="Path to the folder where the trained model for entity linking is present",
-    default="spacy_nel_wikidata_wikipedia_en_train_output_sample_100/nlp"
+    default="/data/spacy_nel/spacy_nel_norwegian_t50k_e5_d100_p0.3/nlp"
 )
 args = parser.parse_args()  
 nlp = spacy.load(args.model_path)
-doc = nlp("The European Commission said on Thursday it disagreed with German advice to consumers to shun British lamb until scientists determine whether mad cow disease can be transmitted to sheep.")
+doc = nlp("Hydrogenaksjen Nel ASA stiger hele ti prosent på Oslo Børs etter at selskapet torsdag meldte om en ordre på levering av elektrolyserør for 11 millioner euro (110 millioner kroner).")
 for ent in doc.ents:
-    print(ent.text, ent.label_, ent.kb_id_)
+    print(ent)
+    print(ent.text, ent.label_, ent.kb_id_, ent.kb_id, ent.doc)

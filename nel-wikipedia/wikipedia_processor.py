@@ -267,7 +267,7 @@ def _process_wikipedia_texts(
                                 "Found duplicate article ID", article_id, clean_line
                             )  # This should never happen ...
                         read_ids.add(article_id)
-
+                
                 # read the title of this article (outside the revision portion of the document)
                 if not reading_revision:
                     titles = title_regex.search(clean_line)
